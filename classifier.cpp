@@ -31,7 +31,7 @@ class Classifier {
                         return log((double)posts_per_word[word] / num_posts);
                     }
                 }
-                return log((double)word_and_label[{label, word}] / posts_per_label[label]);
+            return log((double)word_and_label[{label, word}] / posts_per_label[label]);
             }
         }
 
