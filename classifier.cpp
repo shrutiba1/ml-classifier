@@ -114,17 +114,12 @@ int main(int argc, char* argv[]) {
   vector<string> tags;
   vector<string> contents;
 
-  map<string, string> first_row;
-  csv1 >> first_row;
-  int num_posts = stoi(first_row["n"]);
-  tags.push_back(first_row["tag"]);
-  contents.push_back(first_row["content"]);
-  
-  for (size_t i = 1; i < num_posts; i++) {
-    map<string, string> row;
-    csv1 >> row;
+  int num_posts = 0;
+  map<string, string> row;
+  while (csv1 >> row) {
     tags.push_back(row["tag"]);
     contents.push_back(row["content"]);
+    num_posts++;
     }
 
 Classifier andy = Classifier(num_posts, tags, contents);
