@@ -58,6 +58,12 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "iostream": "cpp",
-    "fstream": "cpp"
+    "fstream": "cpp",
+    "__locale": "cpp",
+    "regex": "cpp",
+    "string": "cpp",
+    "string_view": "cpp",
+    "map": "cpp",
+    "vector": "cpp"
   }
 }

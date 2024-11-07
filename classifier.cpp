@@ -2,6 +2,8 @@
 #include <fstream>
 #include <string>
 #include "csvstream.hpp"
+#include <cmath>
+#include <set>
 
 using namespace std;
 
@@ -15,26 +17,92 @@ class Classifier {
         map<string, int> posts_per_label;
         map<pair<string, string>, int> word_and_label;
 
+        // REQUIRES: number of training posts >= 0, label is nonempty
+        // MODIFIES: nothing
+        // EFFECTS: returns a double with either log-prior or log-likelihood
+        double calc_log(string label, bool prior, string word="") {
+            if (prior) {
+                return log((double)posts_per_label[label] / num_posts);
+            } else {
+                if (word_and_label.find({label,word}) == word_and_label.end()) {
+                    if (posts_per_word.find(word) == posts_per_word.end()) {
+                        return log((double)1/num_posts);
+                    } else {
+                        return log((double)posts_per_word[word] / num_posts);
+                    }
+                }
+                return log((double)word_and_label[{label, word}] / posts_per_label[label]);
+            }
+        }
+
     public:
+        set<string> unique_words(const string &str) {
+            istringstream source(str);
+            set<string> words;
+            string word;
+            while (source >> word) {
+                words.insert(word);
+            }
+            return words;
+        }
         Classifier(int num_posts_in, vector<string> tags_in, vector<string> contents_in)
          : num_posts(num_posts_in), tags(tags_in), contents(contents_in){
-            // code to create the other variables
+            for (size_t i = 0; i < num_posts; i++) {
+                if (posts_per_label.find(tags[i]) == posts_per_label.end()) {
+                    posts_per_label[tags[i]] = 1;
+                } else {
+                    posts_per_label[tags[i]]++;
+                }
+                set<string> words = unique_words(contents[i]);
+                for (auto it = words.begin(); it != words.end(); ++it) {
+                    if (posts_per_word.find(*it) == posts_per_word.end()) {
+                    posts_per_word[*it] = 1;
+                    } else {
+                        posts_per_word[*it]++;
+                    }
+                    if (word_and_label.find({tags[i],*it}) == word_and_label.end()) {
+                        word_and_label[{tags[i],*it}] = 1;
+                    } else {
+                        word_and_label[{tags[i],*it}]++;
+                    }
+                }
+                    
+            }
+            vocab_size = posts_per_word.size();
         };
 
+        
+        
         // REQUIRES: tags and contents are not empty
         // MODIFIES: nothing
         // EFFECTS: prints out information about the input training data
         void print_training_data() {
             cout << "training data:" << endl;
             for (size_t i = 0; i < num_posts; i++) {
-                // print data like in the correct file
+                cout << "  label = " << tags[i] << ", content = " << contents[i] << endl;
+            }
+            cout << endl;
+            cout << "trained on " << num_posts << " examples" << endl;
+            cout << "vocabulary size = " << vocab_size << endl;
+            cout << "classes:" << endl;
+            for (const auto& pair : posts_per_label) {
+                cout << "  " << pair.first << ", " << pair.second << 
+                " examples, log-prior = " << calc_log(pair.first, true) << endl;
+            }
+            cout << "classifier parameters:" << endl;
+            for (const auto& pair : word_and_label) {
+                cout << "  " << pair.first.first << ":" << pair.first.second << 
+                ", count = " << pair.second << ", log-likelihood = " << 
+                calc_log(pair.first.first, false, pair.first.second) << endl;
             }
         }
+
+
 };
 
 int main(int argc, char* argv[]) {
   cout.precision(3);
-  if (argc != 2 || argc != 3) {
+  if (argc != 2 && argc != 3) {
     cout << "Usage: classifier.exe TRAIN_FILE [TEST_FILE]" << endl;
     return 1;
   }
@@ -42,31 +110,37 @@ int main(int argc, char* argv[]) {
   string training = argv[1];
   string testing;
   csvstream csv1(training);
-  ifstream fin2;
-  // csvstream throws an error by itself so do we still need to return 1
-  /*if (!csv1.is_open()) {
-    cout << "Error opening file: " << training << endl;
-    return 1;
-  }*/
+  vector<string> header = csv1.getheader();
+  vector<string> tags;
+  vector<string> contents;
+
+  map<string, string> first_row;
+  csv1 >> first_row;
+  int num_posts = stoi(first_row["n"]);
+  tags.push_back(first_row["tag"]);
+  contents.push_back(first_row["content"]);
+  
+  for (size_t i = 1; i < num_posts; i++) {
+    map<string, string> row;
+    csv1 >> row;
+    tags.push_back(row["tag"]);
+    contents.push_back(row["content"]);
+    }
+
+Classifier andy = Classifier(num_posts, tags, contents);
+
+
+// for testing
   if (argc == 3) {
+    ifstream fin2;
     testing = argv[2];
     fin2.open(testing);
     if (!fin2.is_open()) {
         cout << "Error opening file: " << testing << endl;
         return 1;
     }
+    csvstream csv2(fin2);
   }
-csvstream csv2(fin2);
-vector<string> header = csv1.getheader();
-int num_posts = stoi(header[0]);
-vector<string> tags;
-vector<string> contents;
-for (size_t i = 0; i < num_posts; i++) {
-    map<string, string> row;
-    csv1 >> row;
-    tags.push_back(row["tag"]);
-    contents.push_back(row["content"]);
-}
-Classifier andy = Classifier(num_posts, tags, contents);
+andy.print_training_data();
 
 }
