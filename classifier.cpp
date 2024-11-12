@@ -47,7 +47,7 @@ class Classifier {
         }
         Classifier(int num_posts_in, vector<string> tags_in, vector<string> contents_in)
          : num_posts(num_posts_in), tags(tags_in), contents(contents_in){
-            for (size_t i = 0; i < num_posts; i++) {
+            for (int i = 0; i < num_posts; i++) {
                 if (posts_per_label.find(tags[i]) == posts_per_label.end()) {
                     posts_per_label[tags[i]] = 1;
                 } else {
@@ -78,7 +78,7 @@ class Classifier {
         // EFFECTS: prints out information about the input training data
         void print_training_data() {
             cout << "training data:" << endl;
-            for (size_t i = 0; i < num_posts; i++) {
+            for (int i = 0; i < num_posts; i++) {
                 cout << "  label = " << tags[i] << ", content = " << contents[i] << endl;
             }
             cout << endl;
@@ -97,6 +97,40 @@ class Classifier {
             }
         }
 
+        double calc_score(string label, string content) {
+            double score = calc_log(label, true);
+            set<string> words = unique_words(content);
+            for (auto it = words.begin(); it != words.end(); ++it) {
+                score += calc_log(label, false, *it);
+            }
+            return score;
+        }
+
+        void print_results(vector<string> tags2, vector<string> contents2) {
+            cout << "trained on " << tags.size() << " examples" << endl << endl;
+            cout << "test data:" << endl;
+            int count = 0;
+            for (size_t i = 0; i < tags2.size(); i++) {
+                map<string, double> scores;
+                string best_label = posts_per_label.begin()->first;
+
+                for(auto it = posts_per_label.begin(); it != posts_per_label.end();++it){
+                    scores[it->first] = calc_score(it->first, contents2[i]);
+                    if (scores[it->first] > scores[best_label]) {
+                        best_label = it->first;
+                    }
+                }
+                if (best_label == tags2[i]) {
+                    count++;
+                }
+                cout << "  correct = " << tags2[i] << ", predicted = " << best_label << 
+                    ", log-probability score = " << scores[best_label] << endl;
+                cout << "  content = " << contents2[i] << endl << endl;
+
+            }
+            cout << "performance: " << count << " / " << tags2.size() 
+                << " posts predicted correctly" << endl;
+        }
 
 };
 
@@ -135,7 +169,18 @@ Classifier andy = Classifier(num_posts, tags, contents);
         return 1;
     }
     csvstream csv2(fin2);
-  }
-andy.print_training_data();
 
+    map<string, string> row2;
+    vector<string> header = csv2.getheader();
+    vector<string> tags2;
+    vector<string> contents2;
+
+    while (csv2 >> row2) {
+    tags2.push_back(row2["tag"]);
+    contents2.push_back(row2["content"]);
+    }
+    andy.print_results(tags2,contents2);
+  }else{
+    andy.print_training_data();
+  }
 }

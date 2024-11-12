@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": ["train_small.csv", "test_small.csv"],
-      "cwd": "/Users/shrutiballa/eecs280/ml-classifier",
-      "program": "/Users/shrutiballa/eecs280/ml-classifier/classifier.exe"
+      "cwd": "${workspaceFolder}",
+      "program": "${workspaceFolder}/classifier.exe"
     }
   ]
 }
